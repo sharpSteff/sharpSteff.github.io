@@ -20,7 +20,7 @@ description: >
 
 After years of contributing to [AvalonDock](https://github.com/Dirkster99/AvalonDock) through incremental fixes, maintenance work, and community support, I'm deep into what I expect to be **the most meaningful release I've been part of in my open-source career**.
 
-v5 is currently in **early pre-alpha** — not yet released, still actively under development. This post is a reflection on where AvalonDock came from, what v5 is changing under the hood, and why it matters.
+[AvalonDock](https://github.com/Dirkster99/AvalonDock) v5 is currently in **early pre-alpha** — not yet released, still actively under development. Feel free to open up issues or create pull requests to improve AvalonDock. This post is a reflection on where AvalonDock came from, what v5 is changing under the hood, and why it matters.
 
 ## Table of contents
 
