@@ -105,10 +105,6 @@ This separation also means the door is now open — at least architecturally —
 
 ---
 
-## What's Shipped and What's Next
-
-Since this is early pre-alpha, most of the high-level features are already implemented but still experimental. Here's what's planned and what they'll look like when they land.
-
 ### First-Class Dependency Injection Support
 
 Today, getting AvalonDock to play nicely with a DI container requires workarounds. v5 ships a set of `IServiceCollection` extension methods that make DI a first-class citizen.
@@ -147,7 +143,9 @@ Additional extension methods cover the rest of the surface area: `AddAvalonDock<
 
 ### First-Class MVVM Support
 
-The DI integration above also drives the MVVM story. `IDockLayoutService` auto-builds the dock layout tree from all registered `IToolbox` instances, and your ViewModel exposes it as a single bindable property:
+The DI integration above also drives the MVVM story. 
+`IDockLayoutService` auto-builds the dock layout tree from all registered `IToolbox` instances, and your ViewModel exposes it as a single bindable property.
+`IDockLayoutService` has on top operations to open or close documents right in the ViewModel. No more Code-Behind slop:
 
 ```csharp
 public class MainViewModel
@@ -162,11 +160,32 @@ public class MainViewModel
 
     /// <summary>Bind to DockLayout on the DockingManager.</summary>
     public IRootDock DockLayout => _dockService.Layout;
+
+    public void OpenFile(string filePath)
+  	{
+  		_dockService.OpenOrActivateDocument(
+  			e => e.FilePath == filePath,
+  			() =>
+  			{
+  				var tab = new EditorTabViewModel();
+  				tab.LoadFile(filePath);
+  				return tab;
+  			});
+  	}
+
+  	[RelayCommand]
+  	private void CloseEditor(EditorTabViewModel? tab)
+  	{
+  		if (tab != null)
+  			_dockService.CloseDocument(tab);
+  	}
 }
 ```
 
 In XAML you bind `DockLayout` directly to the manager — no manual wiring of `DocumentsSource`, `AnchorablesSource`, or `LayoutItemContainerStyle`. The layout model stays in sync automatically because it was built from your ViewModels in the first place.
-
+```xaml
+        <avalonDock:ToggleDockingManager DockLayout="{Binding DockLayout}"/>
+```
 ### Toggle Docking Manager
 
 One of the features I'm personally most excited about is a new optional docking mode inspired by VSCode and IntelliJ: **panel toggling** instead of permanent docking.
