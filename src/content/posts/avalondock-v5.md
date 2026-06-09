@@ -81,22 +81,21 @@ After this change, a test for layout serialization looks like this:
 ```csharp
 // No WPF dependencies required
 [Test]
-public void LayoutRoot_ShouldSerializeAndDeserializeDocuments()
+public void Deserialize_ValidXml_ProducesMatchingDto()
 {
-    var root = new LayoutRoot();
-    var pane = new LayoutDocumentPane();
-    var doc = new LayoutDocument { Title = "MyDocument" };
-    pane.Children.Add(doc);
-    root.RootPanel = new LayoutPanel { Children = { pane } };
+    var manager = new FakeDockingManager();
+    manager.Layout = new FakeLayoutRoot(CreateMinimalDto());
+    var serializer = new XmlLayoutSerializer(manager);
 
-    var serializer = new XmlLayoutSerializer();
-    var xml = serializer.Serialize(root);
+    using var stream = new MemoryStream();
+    serializer.Serialize(stream);
+    var xml = Encoding.UTF8.GetString(stream.ToArray());
 
-    var restored = serializer.Deserialize(xml);
+    var roundTripped = DeserializeFromXml(xml, manager);
 
-    Assert.Single(restored.RootPanel.Children
-        .OfType<LayoutDocumentPane>()
-        .First().Children);
+    Assert.That(roundTripped, Is.Not.Null);
+    Assert.That(roundTripped.RootPanel, Is.Not.Null);
+    Assert.That(roundTripped.RootPanel.Children.Count, Is.EqualTo(2));
 }
 ```
 
