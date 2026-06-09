@@ -293,7 +293,7 @@ The work has been technically demanding. Deep in a complex legacy codebase that 
 
 I'm grateful to [Dirkster99](https://github.com/Dirkster99) for the trust and collaboration that makes this possible, and to everyone in the community who has filed issues, tested previews, and kept AvalonDock alive through every era of its existence - from CodePlex to Xceed to today.
 
-If you're building WPF applications on modern .NET, v5 is one to watch.
+If you're building powerful WPF applications (or maybe Uno - in future) on modern .NET, AvalonDock v5 is one to watch.
 
 → [AvalonDock on GitHub](https://github.com/Dirkster99/AvalonDock)  
 → [v5.0.0 Roadmap & Discussion — Issue #560](https://github.com/Dirkster99/AvalonDock/issues/560)
