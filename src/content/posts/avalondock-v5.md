@@ -253,13 +253,13 @@ New `OverlayPreviewRules` and `OverlayTabTargetRules` helpers express the overla
 
 Here's what the ToggleDockingManager looks like in action with the current v5 pre-alpha:
 
-![AvalonDock Dark Welcome](../assets/images/avalondock/AvalonDockCodeApp_Dark_Welcome.png)
+![AvalonDock Dark Welcome](../../assets/images/AvalonDockCodeApp_Dark_Welcome.png)
 
-![AvalonDock Light Drag Document](../assets/images/avalondock/AvalonDockCodeApp_Light_Drag_Document.png)
+![AvalonDock Light Drag Document](../../assets/images/AvalonDockCodeApp_Light_Drag_Document.png)
 
-![AvalonDock Dark Toolbox](../assets/images/avalondock/AvalonDockCodeApp_Dark_Toolbox.png)
+![AvalonDock Dark Toolbox](../../assets/images/AvalonDockCodeApp_Dark_Toolbox.png)
 
-![AvalonDock Light Welcome](../assets/images/avalondock/AvalonDockCodeApp_Light_Welcome.png)
+![AvalonDock Light Welcome](../../assets/images/AvalonDockCodeApp_Light_Welcome.png)
 
 ---
 
