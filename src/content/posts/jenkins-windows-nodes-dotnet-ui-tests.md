@@ -13,6 +13,7 @@ tags:
   - ci-cd
   - ui-testing
   - flaui
+  - github-actions
 description: >
   How I provision Jenkins Windows execution nodes for .NET builds and — the tricky
   part — automated UI testing. Why GUI automation refuses to work from a Windows
@@ -318,6 +319,84 @@ variable per host, suffixed with the node name.
 
 The Ansible tasks that touch these values are marked `no_log: true` so the secrets never
 land in the job log either.
+
+## The other side: GitHub Actions does this for free
+
+After all that ceremony, it's worth pointing out the contrast: on a **hosted** CI runner,
+none of this is your problem. The exact same FlaUI + NUnit3 + .NET stack runs on GitHub
+Actions' `windows-latest` runners with no auto-logon, no scheduled task, no desktop
+plumbing at all — because each job gets a fresh, throwaway VM that already boots into an
+interactive desktop session. The runner agent is set up such that UI automation just works.
+
+I maintain [AvalonDock](https://github.com/Dirkster99/AvalonDock) (a WPF docking library),
+and its [CI workflow](https://github.com/Dirkster99/AvalonDock/blob/master/.github/workflows/ci.yml)
+is a good apples-to-apples example — same FlaUI/NUnit3/.NET combination, but the entire
+"node setup" collapses into a few lines of YAML:
+
+```yaml
+name: CI
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest          # fresh VM with a desktop, every run
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - run: dotnet restore AvalonDock.sln
+      - run: dotnet build AvalonDock.sln -c Release -warnaserror -m:1
+
+      # Headless unit tests — everything except the UI category
+      - run: >
+          dotnet test AvalonDock.sln -c Release --no-build -m:1
+          --filter "TestCategory!=FlaUI"
+          --logger "trx;LogFileName=unit.trx"
+
+      # UI tests — the FlaUI category, on the desktop the runner already has
+      - run: >
+          dotnet test AvalonDock.sln -c Release --no-build -m:1
+          --framework net10.0-windows
+          --filter "TestCategory=FlaUI"
+          --logger "trx;LogFileName=flaui.trx"
+
+      - uses: actions/upload-artifact@v4
+        if: always()                  # keep results even when tests fail
+        with:
+          name: test-results
+          retention-days: 14
+          path: "**/*.trx"
+```
+
+A few things stand out when you put the two side by side:
+
+| | **Jenkins self-hosted node** | **GitHub Actions `windows-latest`** |
+|---|---|---|
+| Interactive desktop | You build it (auto-logon + logon task) | Provided, per job |
+| Agent lifecycle | Long-lived, you patch & maintain it | Fresh, throwaway VM each run |
+| Toolchain | You install it (Ansible/Chocolatey) | Pre-baked image + `setup-dotnet` |
+| State between runs | Persists (good and bad) | None — always clean |
+| FlaUI category split | Same `--filter TestCategory` trick | Same `--filter TestCategory` trick |
+| Cost / control | Your hardware, your network, full control | Per-minute, but zero ops |
+
+Notice the **test invocation is essentially identical** on both sides — the same
+`dotnet test --filter "TestCategory=FlaUI"` split between headless and UI tests, the same
+TRX loggers, the same `-m:1` to keep parallelism from fighting over the single desktop.
+That's the nice part: FlaUI tests don't care *where* they run, as long as there's a desktop.
+All the Jenkins work in this post is, fundamentally, about reproducing on your own hardware
+the one thing GitHub's hosted runner hands you for free.
+
+So why self-host at all? The usual reasons: hardware or licensed software that can't live in
+the cloud, builds that need to reach an internal network, GPU or performance requirements, or
+simply cost at scale. When those apply, you're back to owning the desktop problem — and an
+Ansible role is how you stop solving it by hand.
 
 ## Wrapping up
 
