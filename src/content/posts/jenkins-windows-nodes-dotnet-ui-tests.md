@@ -241,7 +241,7 @@ fixed coordinates. The agent launch script forces a known resolution (e.g. 1920x
 a small `ChangeDisplaySettings` P/Invoke before the agent starts, so every run begins from
 the same, predictable screen geometry.
 
-## The headless 80%: installing the toolchain
+## The headless 90%: installing the toolchain
 
 With the hard part out of the way, the rest of the provisioning is a list of tool installs,
 mostly via Chocolatey. A representative slice:
