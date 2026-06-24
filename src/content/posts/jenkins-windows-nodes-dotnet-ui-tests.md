@@ -1,7 +1,7 @@
 ---
-title: Provisioning Jenkins Windows Nodes for .NET Builds and UI Testing with Ansible
-author: sharpSteff
-pubDatetime: 2026-06-24 08:00:00 UTC
+title: "Provisioning Jenkins Windows Nodes for .NET Builds and UI Testing with Ansible"
+author: "sharpSteff"
+pubDatetime: 2026-06-24T08:00:00Z
 slug: jenkins-windows-nodes-dotnet-ui-tests
 featured: false
 draft: false
