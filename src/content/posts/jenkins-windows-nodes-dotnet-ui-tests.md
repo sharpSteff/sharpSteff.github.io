@@ -12,7 +12,6 @@ tags:
   - windows
   - ci-cd
   - ui-testing
-  - flaui
   - github-actions
 description: How I provision Jenkins Windows execution nodes for .NET builds and, the tricky part, automated UI testing. Why GUI automation refuses to work from a Windows service, and how an auto-logon plus a logon-triggered scheduled task gives you a real interactive desktop that Ansible can stamp out repeatably.
 ---
@@ -36,43 +35,11 @@ The nodes I'm describing have to do two quite different things:
 MSI installer creation, archiving artifacts, generating license files. None of this
 needs a screen.
 2. **Windows UI tests**: an NUnit3 test project that drives a real WPF application with
-[FlaUI](https://github.com/FlaUI/FlaUI): finding controls, moving the mouse, sending
+UIA3: finding controls, moving the mouse, sending
 keystrokes, taking screenshots, asserting on what's actually on screen.
 
 The first category is the easy 90%. The second is where the design of the node really
 matters.
-
-## The UI tests: FlaUI
-
-For the UI tests I use [FlaUI](https://github.com/FlaUI/FlaUI), a .NET wrapper around the
-native Windows UI Automation APIs (UIA2/UIA3). It's a pure NuGet dependency, there's no
-separate runner or browser-driver to install on the node, so it restores with the rest of
-the project and runs straight through `dotnet test`. That keeps the toolchain side of the
-node refreshingly boring: the .NET SDK is already there, and FlaUI comes along for the ride
-with the test project.
-
-A FlaUI test looks roughly like this: launch the app, find elements by automation ID, and
-drive them like a user would:
-
-```
-using var app = FlaUI.Core.Application.Launch("MyApp.exe");
-using var automation = new UIA3Automation();
-
-var window = app.GetMainWindow(automation);
-window.FindFirstDescendant(cf => cf.ByAutomationId("UsernameBox"))
-      .AsTextBox().Enter("test-user");
-window.FindFirstDescendant(cf => cf.ByAutomationId("LoginButton"))
-      .AsButton().Invoke();
-
-Assert.That(window.FindFirstDescendant(cf => cf.ByAutomationId("StatusLabel"))
-                  .AsLabel().Text, Is.EqualTo("Signed in"));
-```
-
-The important thing for this post is *how* FlaUI works under the hood. It talks to the
-application through the Windows UI Automation provider: it inspects the live UI tree,
-moves the real cursor, and synthesizes real input. All of that is mediated by a desktop and
-a window station, which is exactly why the node has to be set up the way the next section
-describes. FlaUI driving a UI from inside Session 0 has nothing to drive.
 
 ## Why the usual Jenkins agent setup breaks UI tests
 
@@ -314,13 +281,13 @@ land in the job log either.
 ## The other side: GitHub Actions does this for free
 
 After all that ceremony, it's worth pointing out the contrast: on a **hosted** CI runner,
-none of this is your problem. The exact same FlaUI + NUnit3 + .NET stack runs on GitHub
+none of this is your problem. The exact same UI3 + NUnit3 + .NET stack runs on GitHub
 Actions' `windows-latest` runners with no auto-logon, no scheduled task, no desktop
 plumbing at all, because each job gets a fresh, throwaway VM that already boots into an
 interactive desktop session. The runner agent is set up such that UI automation just works.
 
 I maintain [AvalonDock](https://github.com/Dirkster99/AvalonDock) (a WPF docking library),
-and its [CI workflow](https://github.com/Dirkster99/AvalonDock/blob/master/.github/workflows/ci.yml) is a good apples-to-apples example: same FlaUI/NUnit3/.NET combination, but the entire
+and its [CI workflow](https://github.com/Dirkster99/AvalonDock/blob/master/.github/workflows/ci.yml) is a good apples-to-apples example: same UIA3/NUnit3/.NET combination, but the entire
 "node setup" collapses into a few lines of YAML:
 
 ```
@@ -347,15 +314,15 @@ jobs:
       # Headless unit tests - everything except the UI category
       - run: >
           dotnet test AvalonDock.sln -c Release --no-build -m:1
-          --filter "TestCategory!=FlaUI"
+          --filter "TestCategory!=UITest"
           --logger "trx;LogFileName=unit.trx"
 
-      # UI tests - the FlaUI category, on the desktop the runner already has
+      # UI tests - the UITest category, on the desktop the runner already has
       - run: >
           dotnet test AvalonDock.sln -c Release --no-build -m:1
           --framework net10.0-windows
-          --filter "TestCategory=FlaUI"
-          --logger "trx;LogFileName=flaui.trx"
+          --filter "TestCategory=UITest"
+          --logger "trx;LogFileName=UITest.trx"
 
       - uses: actions/upload-artifact@v4
         if: always()                  # keep results even when tests fail
@@ -373,12 +340,12 @@ A few things stand out when you put the two side by side:
 | Agent lifecycle      | Long-lived, you patch & maintain it       | Fresh, throwaway VM each run         |
 | Toolchain            | You install it (Ansible/Chocolatey)       | Pre-baked image + `setup-dotnet`     |
 | State between runs   | Persists (good and bad)                   | None, always clean                   |
-| FlaUI category split | Same `--filter TestCategory` trick        | Same `--filter TestCategory` trick   |
+| UI3 category split | Same `--filter TestCategory` trick        | Same `--filter TestCategory` trick   |
 | Cost / control       | Your hardware, your network, full control | Per-minute, but zero ops             |
 
-Notice the **test invocation is essentially identical** on both sides: the same `dotnet test --filter "TestCategory=FlaUI"` split between headless and UI tests, the same
+Notice the **test invocation is essentially identical** on both sides: the same `dotnet test --filter "TestCategory=UITest"` split between headless and UI tests, the same
 TRX loggers, the same `-m:1` to keep parallelism from fighting over the single desktop.
-That's the nice part: FlaUI tests don't care *where* they run, as long as there's a desktop.
+That's the nice part: UITest tests don't care *where* they run, as long as there's a desktop.
 All the Jenkins work in this post is, fundamentally, about reproducing on your own hardware
 the one thing GitHub's hosted runner hands you for free.
 
