@@ -1,7 +1,7 @@
 ---
 title: "AvalonDock v5 Is Released — The Numbers Behind It"
 author: "sharpSteff"
-pubDatetime: 2026-08-12T16:00:00Z
+pubDatetime: 2026-08-12T08:00:00Z
 slug: avalondock-v5-released
 featured: true
 draft: false
